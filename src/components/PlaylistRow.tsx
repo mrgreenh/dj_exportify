@@ -1,87 +1,56 @@
-import React from "react"
-import { withTranslation, WithTranslation } from "react-i18next"
-import { Button } from "react-bootstrap"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-
-import { apiCallErrorHandler } from "helpers"
-import PlaylistExporter from "./PlaylistExporter"
+import React from 'react'
+import { withTranslation, WithTranslation } from 'react-i18next'
+import { Button } from 'react-bootstrap'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 interface PlaylistRowProps extends WithTranslation {
-  accessToken: string,
-  key: string,
-  playlist: any,
-  config: any
+  playlist: any
+  pinned: boolean
+  hasCachedTracks: boolean
+  onOpen: () => void
+  onPinToggle: () => void
 }
 
-class PlaylistRow extends React.Component<PlaylistRowProps> {
-  state = {
-    exporting: false
-  }
+function PlaylistRow(props: PlaylistRowProps) {
+  const { playlist, pinned, hasCachedTracks, i18n } = props
 
-  exportPlaylist = () => {
-    this.setState(
-      { exporting: true },
-      () => {
-        (new PlaylistExporter(
-          this.props.accessToken,
-          this.props.playlist,
-          this.props.config
-        )).export().catch(apiCallErrorHandler).then(() => {
-          this.setState({ exporting: false })
-        })
-      }
-    )
-  }
-
-  renderTickCross(condition: boolean) {
-    if (condition) {
-      return <FontAwesomeIcon icon={['far', 'check-circle']} size="sm" />
-    } else {
-      return <FontAwesomeIcon icon={['far', 'times-circle']} size="sm" className="opacity-25" />
-    }
-  }
-
-  renderIcon(playlist: any) {
+  const renderIcon = () => {
     if (playlist.name === 'Liked') {
-      return <FontAwesomeIcon icon={['far', 'heart']} style={{ color: 'red' }} />;
-    } else {
-      return <FontAwesomeIcon icon={['fas', 'music']} />;
+      return <FontAwesomeIcon icon={['far', 'heart']} style={{ color: 'red' }} />
     }
+
+    return <FontAwesomeIcon icon={['fas', 'music']} />
   }
 
-  render() {
-    let playlist = this.props.playlist
-    const icon = ['fas', (this.state.exporting ? 'sync' : 'download')]
+  const unsupported = playlist.uri == null
 
-    if (playlist.uri == null) return (
-      <tr key={this.props.key}>
-        <td>{this.renderIcon(playlist)}</td>
-        <td>{playlist.name}</td>
-        <td className="d-none d-sm-table-cell" colSpan={2}>{this.props.i18n.t("playlist.not_supported")}</td>
-        <td className="d-none d-sm-table-cell">{this.renderTickCross(playlist.public)}</td>
-        <td className="d-none d-md-table-cell">{this.renderTickCross(playlist.collaborative)}</td>
-        <td>&nbsp;</td>
-      </tr >
-    );
-
-    return (
-      <tr key={this.props.key}>
-        <td>{this.renderIcon(playlist)}</td>
-        <td><a href={playlist.uri}>{playlist.name}</a></td>
-        <td><a href={playlist.owner.uri}>{playlist.owner.display_name}</a></td>
-        <td className="d-none d-sm-table-cell">{playlist.tracks.total}</td>
-        <td className="d-none d-sm-table-cell">{this.renderTickCross(playlist.public)}</td>
-        <td className="d-none d-md-table-cell">{this.renderTickCross(playlist.collaborative)}</td>
-        <td className="text-end">
-          {/* @ts-ignore */}
-          <Button type="submit" variant="primary" size="xs" onClick={this.exportPlaylist} disabled={this.state.exporting} className="text-nowrap">
-            {/* @ts-ignore */}
-            <FontAwesomeIcon icon={icon} size="sm" spin={this.state.exporting} /> {this.props.i18n.t("playlist.export")}
+  return (
+    <tr>
+      <td>{renderIcon()}</td>
+      <td>
+        {unsupported ? (
+          <span>{playlist.name}</span>
+        ) : (
+          <Button variant="link" className="playlist-link p-0 text-start text-decoration-none" onClick={props.onOpen}>
+            {playlist.name}
           </Button>
-        </td>
-      </tr>
-    );
-  }
+        )}
+      </td>
+      <td>{playlist.owner?.display_name}</td>
+      <td className="d-none d-sm-table-cell">{playlist.tracks.total}</td>
+      <td className="d-none d-md-table-cell">{hasCachedTracks ? i18n.t('playlist.cached', { defaultValue: 'Cached' }) : '—'}</td>
+      <td className="text-end">
+        <Button
+          variant={pinned ? 'warning' : 'outline-secondary'}
+          size="sm"
+          onClick={props.onPinToggle}
+          aria-label={pinned ? i18n.t('playlist.unpin', { defaultValue: 'Unpin' }) : i18n.t('playlist.pin', { defaultValue: 'Pin' })}
+        >
+          <FontAwesomeIcon icon={['fas', 'thumbtack']} />
+        </Button>
+      </td>
+    </tr>
+  )
 }
 
 export default withTranslation()(PlaylistRow)

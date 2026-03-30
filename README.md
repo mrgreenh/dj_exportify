@@ -2,21 +2,26 @@
 
 <a href="https://exportify.app/"><img src="assets/screenshot.png"/></a>
 
-Export your Spotify playlists to [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) by clicking on this link: [https://exportify.app/](https://exportify.app/).
+Browse your Spotify playlists and manage a lightweight DJ digging workflow by clicking on this link: [https://exportify.app/](https://exportify.app/).
 
 As many users have noted, there is no way to export/archive/backup playlists from the Spotify client for safekeeping. This application provides a simple interface for doing that using the [Spotify Web API](https://developer.spotify.com/documentation/web-api/).
 
-**No data will be saved - the entire application runs in the browser.**
+The application runs in the browser, and can optionally persist your pinned playlists and playlist caches to a local JSON file that you choose.
 
 ## Features
 
-- ⚙️ Optional inclusion of album, artist and audio features data in export files
-- 🔍 Playlist search with [advanced search syntax](#advanced-search-syntax) and results export
+- 📌 Pin playlists so they stay at the top of the list
+- 🔍 Playlist search with [advanced search syntax](#advanced-search-syntax)
+- 🎧 Playlist detail view with title, artist, release date, popularity, and per-track done state
+- ✅ Mark tracks individually or mark a whole playlist as done
+- 💾 Persist pinned playlists and cached playlist data to a local JSON file with autosave
+- 🔄 Refresh a playlist on demand and otherwise keep using the cached local copy
+- 🔎 Open Beatport searches for every track that is not marked done
 - 🌓 Dark mode
 - 🗺 Available in 10 languages (English, French, Spanish, Italian, German, Portuguese, Swedish, Dutch, Japanese and Arabic)
 - 📱 Mobile friendly
 - ℹ Quick reference help
-- 🚀 [Advanced rate limiting handling](https://github.com/watsonbox/exportify/pull/75) for speedy exports
+- 🚀 [Advanced rate limiting handling](https://github.com/watsonbox/exportify/pull/75) for speedy playlist refreshes
 - 👩‍💻 Modern [React-based development stack](#stack) + test suite
 
 ## Usage
@@ -24,68 +29,30 @@ As many users have noted, there is no way to export/archive/backup playlists fro
 1. Fire up [the app](https://exportify.app/)
 2. Click 'Get Started'
 3. Grant Exportify read-only access to your playlists
-4. Click the 'Export' button to export a playlist
+4. Optionally click 'Save As' to choose a local JSON file for autosave
+5. Pin the playlists you revisit often
+6. Click a playlist name to open its detail view
+7. Click 'Update' whenever you want to refresh the cached track list from Spotify
+8. Use 'Start Beatport Search' to open Beatport tabs for all tracks that are not marked done
 
-Click 'Export All' to save a zip file containing a CSV file for each playlist in your account. This may take a while when many playlists exist and/or they are large.
+Once a save destination has been chosen, playlist pins, cached playlist contents, and done states are automatically written back to that JSON file.
 
-### Re-importing Playlists
+### Playlist Detail View
 
-Once playlists are saved, it's also pretty straightforward to re-import them into Spotify. Open up the CSV file in Excel, for example, select and copy the `spotify:track:xxx` URIs, then simply create a playlist in Spotify and paste them in. This has only been tested with the desktop app.
+Opening a playlist shows cached track data with the following fields:
 
-### Export Format
-
-Track data is exported in [UTF-8](https://en.wikipedia.org/wiki/UTF-8) encoded [CSV](http://en.wikipedia.org/wiki/Comma-separated_values) format with the following fields from the [Spotify track object](https://developer.spotify.com/documentation/web-api/reference/get-several-tracks):
-
-- Track URI
 - Track Name
-- Artist URI(s)
 - Artist Name(s)
-- Album URI
-- Album Name
-- Album Artist URI(s)
-- Album Artist Name(s)
 - Album Release Date
-- Album Image URL (typically 640x640px jpeg)
-- Disc Number
-- Track Number
-- Track Duration (ms)
-- Track Preview URL (mp3)
-- Explicit?
 - Popularity
-- ISRC ([International Standard Recording Code](https://isrc.ifpi.org/en/))
-- Added By
-- Added At
+- Done state
 
-By clicking on the cog, additional data can be exported.
+The detail view also lets you:
 
-<a href="https://watsonbox.github.io/exportify/"><img src="https://user-images.githubusercontent.com/17737/100668594-72be1600-335c-11eb-90d6-c9ae873e347d.png"/></a>
-
-By selecting "Include artists data", the following fields will be added from the [Spotify artist object](https://developer.spotify.com/documentation/web-api/reference/get-multiple-artists):
-
-- Artist Genres
-
-And by selecting "Include audio features data", the following fields will be added from the [Spotify audio features object](https://developer.spotify.com/documentation/web-api/reference/get-several-audio-features):
-
-- Danceability
-- Energy
-- Key
-- Loudness
-- Mode
-- Speechiness
-- Acousticness
-- Instrumentalness
-- Liveness
-- Valence
-- Tempo
-- Time Signature
-
-Additionally, by selecting "Include album data", the following fields will be added from the [Spotify album object (full)](https://developer.spotify.com/documentation/web-api/reference/get-an-album)
-
-- Album Genres
-- Label
-- Copyrights
-
-Note that the more data being exported, the longer the export will take.
+- Refresh the playlist from Spotify on demand
+- Mark tracks done one by one or all at once
+- Open Beatport searches for tracks that are still pending
+- Autosave the resulting state to a JSON file you selected with `Save As`
 
 ### Playlist Search
 
@@ -94,7 +61,7 @@ If you're searching for a specific playlist to export, you can use the search fa
 <a href="https://watsonbox.github.io/exportify/"><img src="https://user-images.githubusercontent.com/17737/100201109-eb0d7d00-2eff-11eb-993e-7ed955e2361c.gif"/></a>
 
 - Searching is _case-insensitive_.
-- Search results can be exported as a zip file by clicking "Export Results"
+- Search results stay interactive, so you can pin playlists or open them directly into the detail view
 
 > [!WARNING]
 > Please be aware that if you have a very large number of playlists, there may be a small delay before the first search results appear since the Spotify API itself doesn't allow for searching directly, so all playlists must be retrieved first.

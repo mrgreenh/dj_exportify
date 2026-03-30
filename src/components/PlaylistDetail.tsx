@@ -18,13 +18,31 @@ interface PlaylistDetailProps extends WithTranslation {
   onUpdate: () => void
   onMarkAllDone: () => void
   onStartBeatportSearch: () => void
+  onOpenTrackBeatportSearch: (trackId: string) => void
   onReconnectSavedFile: () => void
   onTrackDoneToggle: (trackId: string, done: boolean) => void
 }
 
-function PlaylistDetail(props: PlaylistDetailProps) {
+export function PlaylistDetail(props: PlaylistDetailProps) {
   const { i18n, playlist, playlistState } = props
-  const tracks = playlistState?.tracks || []
+  const tracks = [...(playlistState?.tracks || [])].sort((left, right) => {
+    const leftAddedAt = Date.parse(left.addedAt || '')
+    const rightAddedAt = Date.parse(right.addedAt || '')
+
+    if (Number.isNaN(leftAddedAt) && Number.isNaN(rightAddedAt)) {
+      return 0
+    }
+
+    if (Number.isNaN(leftAddedAt)) {
+      return 1
+    }
+
+    if (Number.isNaN(rightAddedAt)) {
+      return -1
+    }
+
+    return rightAddedAt - leftAddedAt
+  })
   const pendingTracks = tracks.filter((track) => !track.done)
   const remainingTracksLabel = pendingTracks.length === 1
     ? '1 track remaining'
@@ -99,6 +117,7 @@ function PlaylistDetail(props: PlaylistDetailProps) {
                 <th>{i18n.t('track.artist_names')}</th>
                 <th>{i18n.t('track.album_release_date')}</th>
                 <th>{i18n.t('track.popularity')}</th>
+                <th className="text-center">{i18n.t('playlist.search', { defaultValue: 'Search' })}</th>
                 <th className="text-center">{i18n.t('playlist.done', { defaultValue: 'Done' })}</th>
               </tr>
             </thead>
@@ -109,6 +128,16 @@ function PlaylistDetail(props: PlaylistDetailProps) {
                   <td>{track.artist}</td>
                   <td>{track.releaseDate || '—'}</td>
                   <td>{track.popularity}</td>
+                  <td className="text-center track-actions-cell">
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => props.onOpenTrackBeatportSearch(track.id)}
+                      aria-label={i18n.t('playlist.search_track_on_beatport', { defaultValue: 'Search this track on Beatport', track: track.title })}
+                    >
+                      <FontAwesomeIcon icon={['fas', 'search']} /> {i18n.t('playlist.beatport', { defaultValue: 'Beatport' })}
+                    </Button>
+                  </td>
                   <td className="text-center">
                     <Form.Check
                       type="checkbox"

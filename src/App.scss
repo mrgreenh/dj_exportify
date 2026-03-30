@@ -196,3 +196,28 @@
   /* shadow */
   text-shadow: 0 0 5px #444;
 }
+
+.playlist-link {
+  font-weight: 500;
+}
+
+.playlist-detail-header .btn-link {
+  color: inherit;
+}
+
+.playlist-detail .table {
+  background: var(--bs-body-bg);
+}
+
+.track-done {
+  opacity: 0.65;
+}
+
+.track-done td {
+  text-decoration: line-through;
+}
+
+.track-done .track-actions-cell,
+.track-done .track-actions-cell * {
+  text-decoration: none;
+}

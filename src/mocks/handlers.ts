@@ -269,6 +269,52 @@ export const handlers = [
     ))
   }),
 
+  rest.get('https://api.spotify.com/v1/playlists/4XOGDpHMrVoH33uJEwHWU5', (req, res, ctx) => {
+    handlerCalled(req.url.toString())
+
+    if (req.headers.get("Authorization") !== "Bearer TEST_ACCESS_TOKEN") {
+      return res(ctx.status(401), ctx.json({ message: 'Not authorized' }))
+    }
+
+    return res(ctx.json(
+      {
+        "collaborative": false,
+        "description": "",
+        "external_urls": {
+          "spotify": "https://open.spotify.com/playlist/4XOGDpHMrVoH33uJEwHWU5"
+        },
+        "href": "https://api.spotify.com/v1/playlists/4XOGDpHMrVoH33uJEwHWU5",
+        "id": "4XOGDpHMrVoH33uJEwHWU5",
+        "images": [{
+          "height": 640,
+          "url": "https://i.scdn.co/image/ab67616d0000b273306e7640be17c5b3468e6e80",
+          "width": 640
+        }],
+        "name": "Ghostpoet – Peanut Butter Blues and Melancholy Jam",
+        "owner": {
+          "display_name": "watsonbox",
+          "external_urls": {
+            "spotify": "https://open.spotify.com/user/watsonbox"
+          },
+          "href": "https://api.spotify.com/v1/users/watsonbox",
+          "id": "watsonbox",
+          "type": "user",
+          "uri": "spotify:user:watsonbox"
+        },
+        "primary_color": null,
+        "public": false,
+        "snapshot_id": "MixjMzFkNjFhYzJkMDkzNmE3OGQ1N2YyYmQ0NTkxYTk5NjBhZmZkYzZi",
+        "tracks": {
+          "href": "https://api.spotify.com/v1/playlists/4XOGDpHMrVoH33uJEwHWU5/tracks",
+          "limit": 100,
+          "total": 10
+        },
+        "type": "playlist",
+        "uri": "spotify:playlist:4XOGDpHMrVoH33uJEwHWU5"
+      }
+    ))
+  }),
+
   rest.get('https://api.spotify.com/v1/playlists/4XOGDpHMrVoH33uJEwHWU5/tracks', (req, res, ctx) => {
     handlerCalled(req.url.toString())
 
