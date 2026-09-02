@@ -5,7 +5,6 @@ export interface PersistedTrackState {
   artist: string
   releaseDate: string
   popularity: number
-  done: boolean
   addedAt: string
 }
 
@@ -21,8 +20,17 @@ export interface PersistedPlaylistState {
 export interface PersistedAppState {
   version: number
   pinnedPlaylistIds: string[]
+  /**
+   * Single source of truth for the "done" state of a track, keyed by track URI
+   * (see `trackDoneKey`). A track is done everywhere it appears, regardless of
+   * which playlist it was marked in and whether other playlists have been
+   * refreshed since.
+   */
+  doneTrackUris: string[]
   playlistsById: Record<string, PersistedPlaylistState>
 }
+
+export const PERSISTED_APP_STATE_VERSION = 2
 
 export class FilePermissionRequiredError extends Error {
   constructor(message: string) {
@@ -38,10 +46,34 @@ const HANDLE_KEY = 'fileHandle'
 const SAVE_TARGET_NAME_KEY = 'djExportify.saveTargetName'
 
 export const emptyPersistedAppState = (): PersistedAppState => ({
-  version: 1,
+  version: PERSISTED_APP_STATE_VERSION,
   pinnedPlaylistIds: [],
+  doneTrackUris: [],
   playlistsById: {}
 })
+
+/** Key under which a track's done state is stored. Falls back to the track id for tracks without a URI. */
+export function trackDoneKey(track: Pick<PersistedTrackState, 'id' | 'uri'>): string {
+  return track.uri || track.id
+}
+
+export function isTrackDone(state: Pick<PersistedAppState, 'doneTrackUris'>, track: Pick<PersistedTrackState, 'id' | 'uri'>): boolean {
+  return state.doneTrackUris.includes(trackDoneKey(track))
+}
+
+export function setTracksDone(state: PersistedAppState, tracks: Array<Pick<PersistedTrackState, 'id' | 'uri'>>, done: boolean): PersistedAppState {
+  const doneTrackUris = new Set(state.doneTrackUris)
+
+  tracks.forEach((track) => {
+    if (done) {
+      doneTrackUris.add(trackDoneKey(track))
+    } else {
+      doneTrackUris.delete(trackDoneKey(track))
+    }
+  })
+
+  return { ...state, doneTrackUris: Array.from(doneTrackUris) }
+}
 
 function openDatabase(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === 'undefined') {
@@ -86,30 +118,37 @@ async function withStore<T>(mode: IDBTransactionMode, callback: (store: IDBObjec
   })
 }
 
-function normalizeTrack(track: any): PersistedTrackState | null {
+function normalizeTrack(track: any, legacyDoneKeys: Set<string>): PersistedTrackState | null {
   if (!track || typeof track !== 'object') {
     return null
   }
 
-  return {
+  const normalizedTrack: PersistedTrackState = {
     id: String(track.id || ''),
     uri: String(track.uri || ''),
     title: String(track.title || ''),
     artist: String(track.artist || ''),
     releaseDate: String(track.releaseDate || ''),
     popularity: Number(track.popularity || 0),
-    done: Boolean(track.done),
     addedAt: String(track.addedAt || '')
   }
+
+  // Version 1 files stored `done` on each playlist track. Migrate any such
+  // flag into the global set so a track done in one playlist is done in all.
+  if (track.done) {
+    legacyDoneKeys.add(trackDoneKey(normalizedTrack))
+  }
+
+  return normalizedTrack
 }
 
-function normalizePlaylist(playlist: any): PersistedPlaylistState | null {
+function normalizePlaylist(playlist: any, legacyDoneKeys: Set<string>): PersistedPlaylistState | null {
   if (!playlist || typeof playlist !== 'object') {
     return null
   }
 
   const tracks = Array.isArray(playlist.tracks)
-    ? playlist.tracks.map(normalizeTrack).filter(Boolean) as PersistedTrackState[]
+    ? playlist.tracks.map((track: any) => normalizeTrack(track, legacyDoneKeys)).filter(Boolean) as PersistedTrackState[]
     : []
 
   return {
@@ -129,9 +168,15 @@ export function normalizePersistedAppState(value: any): PersistedAppState {
     return fallback
   }
 
+  const doneKeys = new Set<string>(
+    Array.isArray(value.doneTrackUris)
+      ? value.doneTrackUris.map((uri: any) => String(uri)).filter(Boolean)
+      : []
+  )
+
   const playlistsByIdEntries = Object.entries(value.playlistsById || {})
     .map(([playlistId, playlist]) => {
-      const normalizedPlaylist = normalizePlaylist(playlist)
+      const normalizedPlaylist = normalizePlaylist(playlist, doneKeys)
 
       if (!normalizedPlaylist || !playlistId) {
         return null
@@ -142,10 +187,11 @@ export function normalizePersistedAppState(value: any): PersistedAppState {
     .filter(Boolean) as Array<readonly [string, PersistedPlaylistState]>
 
   return {
-    version: 1,
+    version: PERSISTED_APP_STATE_VERSION,
     pinnedPlaylistIds: Array.isArray(value.pinnedPlaylistIds)
       ? value.pinnedPlaylistIds.map((playlistId: any) => String(playlistId))
       : fallback.pinnedPlaylistIds,
+    doneTrackUris: Array.from(doneKeys),
     playlistsById: Object.fromEntries(playlistsByIdEntries)
   }
 }

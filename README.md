@@ -37,6 +37,8 @@ The application runs in the browser, and can optionally persist your pinned play
 
 Once a save destination has been chosen, playlist pins, cached playlist contents, and done states are automatically written back to that JSON file.
 
+Done state is tracked per track, not per playlist: the JSON file keeps a single `doneTrackUris` list, so marking a track done in one playlist marks it done in every other playlist that contains it, including playlists you have not refreshed since. Files written by older versions (which stored `done` on each playlist track) are migrated automatically the next time they are loaded.
+
 ### Playlist Detail View
 
 Opening a playlist shows cached track data with the following fields:
@@ -84,9 +86,9 @@ Certain search queries have special meaning:
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-In the project directory, first run `yarn install` to set up dependencies, then you can run:
+In the project directory, first run `npm install` (or `yarn install`) to set up dependencies, then you can run:
 
-**`yarn start`**
+**`npm start`** (or `yarn start`)
 
 Runs the app in the development mode.\
 Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to view it in the browser.
@@ -94,12 +96,12 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to view it in the browser.
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
 
-**`yarn test`**
+**`npm test`** (or `yarn test`)
 
 Launches the test runner in the interactive watch mode.\
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-**`yarn build`**
+**`npm run build`** (or `yarn build`)
 
 Builds the app for production to the `build` folder.
 

@@ -15,6 +15,7 @@ import {
   clearStoredSaveTargetName,
   emptyPersistedAppState,
   FilePermissionRequiredError,
+  isTrackDone,
   loadStoredFileHandle,
   loadStoredSaveTargetName,
   PersistedAppState,
@@ -22,6 +23,7 @@ import {
   PersistedTrackState,
   pickSaveFileHandle,
   readPersistedAppState,
+  setTracksDone,
   storeFileHandle,
   storeSaveTargetName,
   writePersistedAppState
@@ -316,33 +318,19 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
     }, this.refreshSubtitle)
   }
 
+  private isTrackDone = (track: PersistedTrackState) => {
+    return isTrackDone(this.state.persistedState, track)
+  }
+
   private handleTrackDoneToggle = (playlistId: string, trackId: string, done: boolean) => {
     this.updatePersistedState((persistedState) => {
-      const playlistState = persistedState.playlistsById[playlistId]
+      const track = persistedState.playlistsById[playlistId]?.tracks.find((playlistTrack) => playlistTrack.id === trackId)
 
-      if (!playlistState) {
+      if (!track) {
         return persistedState
       }
 
-      return {
-        ...persistedState,
-        playlistsById: {
-          ...persistedState.playlistsById,
-          [playlistId]: {
-            ...playlistState,
-            tracks: playlistState.tracks.map((track) => {
-              if (track.id !== trackId) {
-                return track
-              }
-
-              return {
-                ...track,
-                done
-              }
-            })
-          }
-        }
-      }
+      return setTracksDone(persistedState, [track], done)
     })
   }
 
@@ -354,19 +342,7 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
         return persistedState
       }
 
-      return {
-        ...persistedState,
-        playlistsById: {
-          ...persistedState.playlistsById,
-          [playlistId]: {
-            ...playlistState,
-            tracks: playlistState.tracks.map((track) => ({
-              ...track,
-              done: true
-            }))
-          }
-        }
-      }
+      return setTracksDone(persistedState, playlistState.tracks, true)
     })
   }
 
@@ -377,7 +353,7 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
       return
     }
 
-    const pendingTracks = playlistState.tracks.filter((track) => !track.done)
+    const pendingTracks = playlistState.tracks.filter((track) => !this.isTrackDone(track))
 
     if (pendingTracks.length === 0) {
       return
@@ -530,11 +506,7 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
     return `${item.track?.uri || item.track?.id || 'track'}::${item.added_at || ''}::${index}`
   }
 
-  private mapTrackItemsToPersistedTracks(playlistId: string, trackItems: any[]): PersistedTrackState[] {
-    const existingPlaylistState = this.getPlaylistState(playlistId)
-    const doneByTrackId = new Map(existingPlaylistState?.tracks.map((track) => [track.id, track.done]) || [])
-    const doneByUri = new Map(existingPlaylistState?.tracks.map((track) => [track.uri, track.done]) || [])
-
+  private mapTrackItemsToPersistedTracks(trackItems: any[]): PersistedTrackState[] {
     return trackItems
       .map((item, index) => {
         if (!item.track) {
@@ -551,7 +523,6 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
           artist: (item.track.artists || []).map((artist: any) => artist.name).join(', '),
           releaseDate: item.track.album?.release_date || '',
           popularity: item.track.popularity || 0,
-          done: doneByTrackId.get(id) ?? doneByUri.get(uri) ?? false,
           addedAt: item.added_at || ''
         }
       })
@@ -583,7 +554,7 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
     try {
       const refreshedPlaylist = await this.refreshPlaylistMetadata(playlist)
       const trackItems = await new TracksBaseData(this.props.accessToken, refreshedPlaylist).trackItems()
-      const tracks = this.mapTrackItemsToPersistedTracks(refreshedPlaylist.id, trackItems)
+      const tracks = this.mapTrackItemsToPersistedTracks(trackItems)
 
       const playlistState: PersistedPlaylistState = {
         playlistId: refreshedPlaylist.id,
@@ -627,6 +598,7 @@ class PlaylistTable extends React.Component<PlaylistTableProps, PlaylistTableSta
         <PlaylistDetail
           playlist={selectedPlaylist}
           playlistState={this.getPlaylistState(selectedPlaylist.id)}
+          isTrackDone={this.isTrackDone}
           pinned={this.isPinned(selectedPlaylist.id)}
           updating={this.state.updatingPlaylistId === selectedPlaylist.id}
           saveTargetName={this.state.saveTargetName}

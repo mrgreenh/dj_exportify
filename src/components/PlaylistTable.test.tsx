@@ -196,24 +196,77 @@ test('save as from the playlist list enables global autosave across updated play
   expect(writePersistedAppStateSpy).toHaveBeenLastCalledWith(
     { name: 'dj-state.json' },
     expect.objectContaining({
-      playlistsById: expect.objectContaining({
-        [playlistId]: expect.objectContaining({
-          tracks: expect.arrayContaining([
-            expect.objectContaining({
-              title: 'One Twos / Run Run Run',
-              done: true
-            })
-          ])
-        })
-      })
+      doneTrackUris: ['spotify:track:7ATyvp3TmYBmGW7YuC8DJ3']
     })
   )
 })
 
+test('a track marked done in one playlist is done in every playlist that contains it', async () => {
+  const sharedTrack = {
+    id: 'shared-track-in-first',
+    uri: 'spotify:track:shared',
+    title: 'Shared Track',
+    artist: 'Shared Artist',
+    releaseDate: '2020',
+    popularity: 10,
+    addedAt: '2020-11-03T15:19:04Z'
+  }
+  const restoredState: persistence.PersistedAppState = {
+    version: 2,
+    pinnedPlaylistIds: [],
+    doneTrackUris: [],
+    playlistsById: {
+      [playlistId]: {
+        playlistId,
+        playlistName: 'Ghostpoet – Peanut Butter Blues and Melancholy Jam',
+        ownerName: 'watsonbox',
+        updatedAt: '2025-01-01T12:00:00.000Z',
+        tracks: [sharedTrack]
+      },
+      liked: {
+        playlistId: 'liked',
+        playlistName: 'Liked',
+        ownerName: 'watsonbox',
+        updatedAt: '2025-01-01T12:00:00.000Z',
+        tracks: [{ ...sharedTrack, id: 'shared-track-in-liked' }]
+      }
+    }
+  }
+
+  mockPersistence({
+    loadStoredSaveTargetName: 'dj-state.json',
+    loadStoredFileHandle: { name: 'dj-state.json' },
+    readPersistedAppState: restoredState
+  })
+
+  const user = userEvent.setup()
+
+  render(<PlaylistTable accessToken="TEST_ACCESS_TOKEN" onSetSubtitle={onSetSubtitle} />)
+
+  await screen.findByText('Ghostpoet – Peanut Butter Blues and Melancholy Jam')
+  await user.click(screen.getByRole('button', { name: 'Ghostpoet – Peanut Butter Blues and Melancholy Jam' }))
+
+  expect(await screen.findByText('Shared Track')).toBeInTheDocument()
+  expect(screen.getByRole('checkbox')).not.toBeChecked()
+
+  await user.click(screen.getByRole('checkbox'))
+
+  expect(screen.getByRole('checkbox')).toBeChecked()
+
+  await user.click(screen.getByRole('button', { name: /back to playlists/i }))
+  await user.click(screen.getByRole('button', { name: 'Liked' }))
+
+  expect(await screen.findByText('Shared Track')).toBeInTheDocument()
+  expect(screen.getByRole('checkbox')).toBeChecked()
+  expect(screen.getByText('0 tracks remaining')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /start beatport search/i })).toBeDisabled()
+})
+
 test('restores save destination and cached playlist data on reload', async () => {
   const restoredState: persistence.PersistedAppState = {
-    version: 1,
+    version: 2,
     pinnedPlaylistIds: [playlistId],
+    doneTrackUris: [],
     playlistsById: {
       [playlistId]: {
         playlistId,
@@ -228,7 +281,6 @@ test('restores save destination and cached playlist data on reload', async () =>
           artist: 'Ghostpoet',
           releaseDate: '2011',
           popularity: 22,
-          done: false,
           addedAt: '2020-11-03T15:19:04Z'
         }]
       }
@@ -258,8 +310,9 @@ test('restores save destination and cached playlist data on reload', async () =>
 
 test('keeps remembered save file on startup permission error and reconnects on click', async () => {
   const restoredState: persistence.PersistedAppState = {
-    version: 1,
+    version: 2,
     pinnedPlaylistIds: [playlistId],
+    doneTrackUris: [],
     playlistsById: {
       [playlistId]: {
         playlistId,
@@ -274,7 +327,6 @@ test('keeps remembered save file on startup permission error and reconnects on c
           artist: 'Ghostpoet',
           releaseDate: '2011',
           popularity: 22,
-          done: false,
           addedAt: '2020-11-03T15:19:04Z'
         }]
       }

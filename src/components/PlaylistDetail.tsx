@@ -3,11 +3,12 @@ import { withTranslation, WithTranslation } from 'react-i18next'
 import { Button, Form } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
-import { PersistedPlaylistState } from 'persistence'
+import { PersistedPlaylistState, PersistedTrackState } from 'persistence'
 
 interface PlaylistDetailProps extends WithTranslation {
   playlist: any
   playlistState?: PersistedPlaylistState
+  isTrackDone: (track: PersistedTrackState) => boolean
   pinned: boolean
   updating: boolean
   saveTargetName: string | null
@@ -25,7 +26,10 @@ interface PlaylistDetailProps extends WithTranslation {
 
 export function PlaylistDetail(props: PlaylistDetailProps) {
   const { i18n, playlist, playlistState } = props
-  const tracks = [...(playlistState?.tracks || [])].sort((left, right) => {
+  const tracks = (playlistState?.tracks || []).map((track) => ({
+    ...track,
+    done: props.isTrackDone(track)
+  })).sort((left, right) => {
     const leftAddedAt = Date.parse(left.addedAt || '')
     const rightAddedAt = Date.parse(right.addedAt || '')
 

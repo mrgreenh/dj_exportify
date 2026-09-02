@@ -29,11 +29,11 @@ test('opens Beatport search for a single track from the playlist detail', async 
             artist: 'Bicep',
             releaseDate: '2017-09-01',
             popularity: 62,
-            done: false,
             addedAt: new Date('2024-01-01T00:00:00.000Z').toISOString()
           }
         ]
       }}
+      isTrackDone={() => false}
       pinned={false}
       updating={false}
       saveTargetName={null}
@@ -81,7 +81,6 @@ test('renders tracks by most recently added first', () => {
             artist: 'Artist One',
             releaseDate: '2017-09-01',
             popularity: 62,
-            done: false,
             addedAt: '2024-01-01T00:00:00.000Z'
           },
           {
@@ -91,11 +90,11 @@ test('renders tracks by most recently added first', () => {
             artist: 'Artist Two',
             releaseDate: '2018-09-01',
             popularity: 70,
-            done: false,
             addedAt: '2024-02-01T00:00:00.000Z'
           }
         ]
       }}
+      isTrackDone={() => false}
       pinned={false}
       updating={false}
       saveTargetName={null}
